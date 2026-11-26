@@ -1,122 +1,149 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+// src/App.jsx
+import { useState } from "react";
+import { obtenerPacientesIniciales } from "./data/pacientesMock";
+import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0)
+  // 1. Estados principales de la aplicación
+  const [pacientes, setPacientes] = useState(() => obtenerPacientesIniciales(1500));
+  const [busqueda, setBusqueda] = useState("");
+  const [pacienteSeleccionado, setPacienteSeleccionado] = useState(pacientes[0]);
+
+  // 2. Lógica de búsqueda instantánea (por nombre, cédula o código)
+  const pacientesFiltrados = pacientes.filter((paciente) => {
+    const termino = busqueda.toLowerCase();
+    return (
+      paciente.nombre.toLowerCase().includes(termino) ||
+      paciente.cedula.includes(termino) ||
+      paciente.id.toLowerCase().includes(termino)
+    );
+  });
+
+  // 3. Función para cambiar el estado de la cita (prefigura integración con Outlook)
+  const cambiarEstadoCita = (idPaciente, nuevoEstado) => {
+    const listaActualizada = pacientes.map((p) =>
+      p.id === idPaciente ? { ...p, estadoCita: nuevoEstado } : p
+    );
+    setPacientes(listaActualizada);
+
+    if (pacienteSeleccionado && pacienteSeleccionado.id === idPaciente) {
+      setPacienteSeleccionado({ ...pacienteSeleccionado, estadoCita: nuevoEstado });
+    }
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
+    <div className="app-container">
+      {/* Encabezado Superior */}
+      <header className="topbar">
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
+          <h1>Centralist Dent — Gestión Clínica</h1>
+          <span className="badge-sucursal">Sede Activa: Santa Isabel</span>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
+        <div className="stats-rapidas">
+          <span>Registros en memoria: <strong>{pacientes.length}</strong></span>
+        </div>
+      </header>
+
+      {/* Buscador Principal */}
+      <section className="search-bar-section">
+        <input
+          type="text"
+          placeholder="Buscar paciente por nombre, cédula o código (ej. SI-0001, María, 0104...)"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="search-input"
+        />
+        <span className="resultados-count">
+          Mostrando {Math.min(pacientesFiltrados.length, 25)} de {pacientesFiltrados.length} coincidencias
+        </span>
       </section>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      {/* Contenido Principal en 2 Columnas: Lista + Ficha Clínica Digital */}
+      <main className="main-grid">
+        {/* Columna Izquierda: Tabla de Pacientes */}
+        <div className="card lista-card">
+          <h2>Directorio de Pacientes (Santa Isabel)</h2>
+          <table className="pacientes-table">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Paciente</th>
+                <th>Cédula</th>
+                <th>Cita</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pacientesFiltrados.slice(0, 25).map((paciente) => (
+                <tr
+                  key={paciente.id}
+                  onClick={() => setPacienteSeleccionado(paciente)}
+                  className={pacienteSeleccionado?.id === paciente.id ? "fila-activa" : ""}
+                >
+                  <td><strong>{paciente.id}</strong></td>
+                  <td>{paciente.nombre}</td>
+                  <td>{paciente.cedula}</td>
+                  <td>
+                    <span className={`estado-pill ${paciente.estadoCita.toLowerCase().replace(" ", "-")}`}>
+                      {paciente.estadoCita}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        {/* Columna Derecha: Ficha Clínica Digital (Reemplazo de Word) */}
+        <div className="card ficha-card">
+          {pacienteSeleccionado ? (
+            <>
+              <div className="ficha-header">
+                <h2>Ficha Clínica Digital</h2>
+                <span className="ficha-id">{pacienteSeleccionado.id}</span>
+              </div>
+
+              <div className="ficha-datos">
+                <p><strong>Paciente:</strong> {pacienteSeleccionado.nombre}</p>
+                <p><strong>Cédula:</strong> {pacienteSeleccionado.cedula}</p>
+                <p><strong>Teléfono:</strong> {pacienteSeleccionado.telefono}</p>
+                <p><strong>Sucursal:</strong> {pacienteSeleccionado.sucursal}</p>
+                <p><strong>Última Visita:</strong> {pacienteSeleccionado.ultimaVisita}</p>
+              </div>
+
+              <hr />
+
+              <div className="ficha-clinica-detalle">
+                <h3>Detalle Odontológico</h3>
+                <p><strong>Motivo de consulta:</strong> {pacienteSeleccionado.motivoConsulta}</p>
+                <p><strong>Diagnóstico:</strong> {pacienteSeleccionado.diagnostico}</p>
+                <p><strong>Tratamiento:</strong> {pacienteSeleccionado.tratamiento}</p>
+              </div>
+
+              <hr />
+
+              {/* Control rápido de estado de cita */}
+              <div className="ficha-acciones">
+                <label><strong>Estado de Cita (Sincronización Agenda):</strong></label>
+                <div className="botones-estado">
+                  {["Agendada", "Confirmada", "No asistió"].map((estado) => (
+                    <button
+                      key={estado}
+                      onClick={() => cambiarEstadoCita(pacienteSeleccionado.id, estado)}
+                      className={pacienteSeleccionado.estadoCita === estado ? "btn-activo" : "btn-secundario"}
+                    >
+                      {estado}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <p>Selecciona un paciente de la lista para ver su ficha.</p>
+          )}
+        </div>
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;
